@@ -7,37 +7,25 @@ import os
 from extensions import db, migrate
 from models import User, JournalEntry
 
-# Load environment variables
 load_dotenv()
 
-# Initialize Flask app
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
 
-# Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///my_journal.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# JWT configuration
 app.config["JWT_SECRET_KEY"] = os.getenv(
     "JWT_SECRET_KEY", "your_default_jwt_secret_key")
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=10)
 
-# Initialize extensions
 db.init_app(app)
 migrate.init_app(app, db)
 jwt = JWTManager(app)
-
-# Routes
-
-# Home Route
 
 
 @app.route("/")
 def home():
     return jsonify({"message": "Welcome to the My Journal API!"}), 200
-
-# Auth Routes
 
 
 @app.route("/user/sign-up", methods=["POST"])
@@ -64,22 +52,23 @@ def user_signup():
     return jsonify({"message": "User sign-up successful."}), 201
 
 
-@app.route("/login", methods=["POST"])
+@app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    email = data.get("email")
-    password = data.get("password")
+    email = data.get('email')
+    password = data.get('password')
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
 
     user = User.query.filter_by(email=email).first()
 
     if not user or not user.check_password(password):
-        return jsonify({"message": "Invalid email or password."}), 400
+        return jsonify({"error": "Invalid email or password"}), 400
 
     access_token = create_access_token(
-        identity={"id": user.id, "role": "user"})
-    return jsonify({"message": f"Welcome {user.name}", "role": "user", "access_token": access_token}), 200
-
-# Journal Routes
+        identity={"id": user.id, "email": user.email})
+    return jsonify({"access_token": access_token, "user": {"id": user.id, "email": user.email}}), 200
 
 
 @app.route("/journal", methods=["POST"])
@@ -95,7 +84,7 @@ def create_journal_entry():
         return jsonify({"message": "Title and content are required."}), 400
 
     new_journal = JournalEntry(
-        title=title, content=content, user_id=current_user['id'])
+        title=title.strip(), content=content.strip(), user_id=current_user['id'])
     db.session.add(new_journal)
     db.session.commit()
 
@@ -138,8 +127,6 @@ def manage_journal_entry(id):
         db.session.commit()
         return jsonify({"message": "Journal entry deleted successfully."}), 200
 
-# Calendar Route
-
 
 @app.route("/journal/calendar", methods=["GET"])
 @jwt_required()
@@ -147,7 +134,6 @@ def get_calendar_entries():
     current_user = get_jwt_identity()
     journals = JournalEntry.query.filter_by(user_id=current_user['id']).all()
 
-    # Format entries for calendar
     calendar_entries = [
         {
             "date": journal.created_at.strftime("%Y-%m-%d"),
@@ -158,8 +144,6 @@ def get_calendar_entries():
     ]
 
     return jsonify(calendar_entries), 200
-
-# Theme Route
 
 
 @app.route("/user/theme", methods=["PUT"])
@@ -177,6 +161,5 @@ def toggle_theme():
     return jsonify({"message": f"Theme updated to {user.theme}."}), 200
 
 
-# Run the app
 if __name__ == '__main__':
     app.run(debug=True)
