@@ -10,7 +10,7 @@ from models import User, JournalEntry
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+CORS(app, resources={r"/*": {"origins": "https://bettyjournal.netlify.app/"}})
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///my_journal.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
