@@ -49,14 +49,14 @@ Follow these steps to set up the project locally:
    pip install -r requirements.txt
    ```
 
-4 . **Set up environment variables:
+4. **Set up environment variables:
 Create a .env file in the root directory and add the following variables:
   ```bash
   SECRET_KEY=your_secret_key
   DATABASE_URL=postgresql://username:password@localhost:5432/my_journal
   JWT_SECRET_KEY=your_jwt_secret_key
   ```
-5 . **Run migrations:
+5. **Run migrations:
   ```bash
   flask db upgrade
   ```
